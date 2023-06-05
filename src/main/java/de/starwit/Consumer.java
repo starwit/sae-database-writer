@@ -2,6 +2,10 @@ package de.starwit;
 
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import de.starwit.visionapi.Messages.TrackingOutput;
+
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -9,12 +13,11 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 
-public class App {
+public class Consumer {
 
     //private static String url = "tcp://localhost:61616";
-    private static String url = "tcp://brain01.starwit.home:32224";
+    private static String url = "tcp://brain01.starwit.home:30062";
     private static String user = "artemis";
     private static String pw = "artemis";
 
@@ -63,12 +66,33 @@ public class App {
             try {
                 bytes = new byte[(int) msg.getBodyLength()];
                 msg.readBytes(bytes);
+                TrackingOutput to = parseReceivedMessage(bytes);
+                if(to != null) {
+                    //just a sample value, to prove we reconstructed Protobuf correctly
+                    int i = to.getTrackedDetectionsList().get(0).getDetection().getClassId();
+                    System.out.println("received tracking output " + i);
+                } else {
+                    System.out.println("message kaputtski");
+                }
+
             } catch (JMSException e) {
                 System.out.println("Can't get bytes");
                 e.printStackTrace();
             }
             
             System.out.println("Consumer " + Thread.currentThread().getName() + " received message: " + msg.toString());
+        }
+
+        private TrackingOutput parseReceivedMessage(byte[] bytes) {
+            TrackingOutput to;
+            try {
+                to = TrackingOutput.parseFrom(bytes);
+                return to;
+            } catch (InvalidProtocolBufferException e) {
+                System.out.println("can't parse message, returning null");
+            }
+
+            return null;
         }
         
     }    
