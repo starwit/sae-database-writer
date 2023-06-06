@@ -33,7 +33,7 @@ public class Producer {
         
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = session.createProducer(session.createQueue("detector"));
-        for (int i = 0; i<100; i++) {
+        for (int i = 0; i<10; i++) {
             BytesMessage msg = session.createBytesMessage();
             msg.writeBytes(createSerializedMessage(i));
             producer.send(msg);

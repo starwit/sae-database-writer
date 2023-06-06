@@ -3,6 +3,7 @@ package de.starwit;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 
 import de.starwit.visionapi.Messages.TrackingOutput;
 
@@ -21,9 +22,14 @@ public class Consumer {
     private static String user = "artemis";
     private static String pw = "artemis";
 
+    private static DataBaseConnection dbCon;
+
     private static ActiveMQConnectionFactory factory;
     public static void main( String[] args ) throws JMSException, InterruptedException {
-        System.out.println( "Hello World!" );
+
+        dbCon = new DataBaseConnection();
+        dbCon.createConnection();
+
         factory = new ActiveMQConnectionFactory(url,user,pw);
         factory.setRetryInterval(1000);
         factory.setRetryIntervalMultiplier(1.0);
@@ -41,9 +47,7 @@ public class Consumer {
             public void run() {
                 try {
                     Thread.sleep(200);
-                    System.out.println("Shutting down ...");
                     factory.close();
-    
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     e.printStackTrace();
@@ -52,7 +56,7 @@ public class Consumer {
         });
 
         while(true) {
-            Thread.sleep(50);
+            Thread.sleep(1);
         }
     }
 
@@ -60,27 +64,19 @@ public class Consumer {
 
         @Override
         public void onMessage(Message message) {
-            System.out.println("Message type " + message.getClass().getName());
             BytesMessage msg = (BytesMessage) message;
             byte[] bytes;
             try {
                 bytes = new byte[(int) msg.getBodyLength()];
-                msg.readBytes(bytes);
+                msg.readBytes(bytes);                
                 TrackingOutput to = parseReceivedMessage(bytes);
                 if(to != null) {
-                    //just a sample value, to prove we reconstructed Protobuf correctly
-                    int i = to.getTrackedDetectionsList().get(0).getDetection().getClassId();
-                    System.out.println("received tracking output " + i);
-                } else {
-                    System.out.println("message kaputtski");
+                    dbCon.insertNewDetection(to);
                 }
 
             } catch (JMSException e) {
-                System.out.println("Can't get bytes");
-                e.printStackTrace();
+                System.out.println("Can't get bytes " + e.getMessage());
             }
-            
-            System.out.println("Consumer " + Thread.currentThread().getName() + " received message: " + msg.toString());
         }
 
         private TrackingOutput parseReceivedMessage(byte[] bytes) {

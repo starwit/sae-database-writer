@@ -1,11 +1,12 @@
 package de.starwit;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.List;
 
 import de.starwit.visionapi.Messages.TrackedDetection;
@@ -42,6 +43,7 @@ public class DataBaseConnection {
             int classId = td.getDetection().getClassId();
             float confidence = td.getDetection().getConfidence();
             byte[] objectID = td.getObjectId().toByteArray();
+            int oId = ByteBuffer.wrap(objectID).getInt();
             int minX = td.getDetection().getBoundingBox().getMinX();
             int minY = td.getDetection().getBoundingBox().getMinY();
             int maxX = td.getDetection().getBoundingBox().getMaxX();
@@ -53,39 +55,15 @@ public class DataBaseConnection {
                 preStmt.setTimestamp(1, timestamp, null);
                 preStmt.setInt(2, classId);
                 preStmt.setFloat(3, confidence);
-                preStmt.setBytes(4, objectID);
+                preStmt.setString(4, ""+oId);
                 preStmt.setInt(5, minX);
                 preStmt.setInt(6, minY);
                 preStmt.setInt(7, maxX);
                 preStmt.setInt(8, maxY);
+                preStmt.executeUpdate();
             }  catch (SQLException e) {
-                System.out.println("Select didn't work " + e.getSQLState());
-                e.printStackTrace();
+                System.out.println("Query didn't work " + e.getMessage());
             }
-        }
-    }
-
-    public void getDetectionData() {
-        String SQL_SELECT = "SELECT * FROM \"Detection\"";
-        try {
-            PreparedStatement preparedStatement = conn.prepareStatement(SQL_SELECT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while(resultSet.next()) {
-                long id = resultSet.getLong("DETECTION_ID");
-                Timestamp ts = resultSet.getTimestamp("CAPTURE_TS");
-                int classId = resultSet.getInt("CLASS_ID");
-                float confidence = resultSet.getFloat("CONFIDENCE");
-                byte[] objectID = resultSet.getBytes("OBJECT_ID");
-                int minX = resultSet.getInt("MIN_X");
-                int minY = resultSet.getInt("MIN_Y");
-                int maxX = resultSet.getInt("MAX_X");
-                int maxY = resultSet.getInt("MAX_Y");
-
-                System.out.println(id + " " + ts.toString() + " " + classId);
-            }
-        } catch (SQLException e) {
-            System.out.println("Select didn't work " + e.getSQLState());
-            e.printStackTrace();
         }
     }
 
@@ -118,8 +96,7 @@ public class DataBaseConnection {
     public static void main( String[] args ) {
         DataBaseConnection dc =  new DataBaseConnection();
         dc.createConnection();
-        dc.insertSampleData();
-        dc.getDetectionData();
+        //dc.insertSampleData();
     }
 
     public boolean isConnected() {
