@@ -3,9 +3,12 @@ package de.starwit;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 
 import de.starwit.visionapi.Messages.TrackingOutput;
+
+import java.util.Properties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -17,50 +20,84 @@ import javax.jms.Session;
 
 public class Consumer {
 
+    private final Logger log = LogManager.getLogger(this.getClass());
+    private Properties config;
+
     //private static String url = "tcp://localhost:61616";
-    private static String url = "tcp://brain01.starwit.home:30062";
-    private static String user = "artemis";
-    private static String pw = "artemis";
+    private String url = "tcp://brain01.starwit.home:30062";
+    private String user = "artemis";
+    private String pw = "artemis";
 
-    private static DataBaseConnection dbCon;
+    private DataBaseConnection dbCon;
 
-    private static ActiveMQConnectionFactory factory;
-    public static void main( String[] args ) throws JMSException, InterruptedException {
+    private ActiveMQConnectionFactory factory;
+    private Connection connection;
+    private Session session;
+    private MessageConsumer consumer;
 
-        dbCon = new DataBaseConnection();
-        dbCon.createConnection();
+    private boolean ready = false;
 
-        factory = new ActiveMQConnectionFactory(url,user,pw);
+    public Consumer(Properties props) {
+        config = props;
+    }
+
+    public void configureQueue() {
+
+        url = config.getProperty("broker.url");
+        user = config.getProperty("broker.username");
+        pw = config.getProperty("broker.pw");
+
+        factory = new ActiveMQConnectionFactory("tcp://" + url, user, pw);
         factory.setRetryInterval(1000);
         factory.setRetryIntervalMultiplier(1.0);
         factory.setReconnectAttempts(-1);
         factory.setConfirmationWindowSize(10);
+        factory.setClientID("vision-api-consumer-01");
 
-        Connection connection = factory.createConnection();
-        connection.start();
-        
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        MessageConsumer consumer = session.createConsumer(session.createQueue("detector"));
-        consumer.setMessageListener(new MyListener());
+        log.info("set up queue connection to " 
+            + "tcp://" + url + " "
+            + config.getProperty("broker.queue"));
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                try {
-                    Thread.sleep(200);
-                    factory.close();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        while(true) {
-            Thread.sleep(1);
+        try {
+            connection = factory.createConnection();
+            connection.start();
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            consumer = session.createConsumer(session.createQueue(config.getProperty("broker.queue")));
+            consumer.setMessageListener(new MyListener(dbCon));
+            ready = true;
+            log.info("Connected to broker");
+        } catch (JMSException e) {
+            log.error("couldn't connect to broker " + config.getProperty("broker.url"));
         }
     }
 
-    private static class MyListener implements MessageListener {
+    public boolean isReady() {
+        return ready;
+    }
+
+    public void stop() {
+        ready = false;
+
+        try {
+            consumer.close();
+            session.close();
+            connection.stop();
+        } catch (JMSException e) {
+            log.warn("Closing JMS Connection didn't work " + e.getMessage());
+        }
+
+        factory.close();
+    }
+
+    private class MyListener implements MessageListener {
+        private final Logger log = LogManager.getLogger(this.getClass());
+
+        private DataBaseConnection dbCon;
+
+        public MyListener(DataBaseConnection dbCon) {
+            log.info("set up message listener");
+            this.dbCon = dbCon;
+        }
 
         @Override
         public void onMessage(Message message) {
@@ -68,7 +105,7 @@ public class Consumer {
             byte[] bytes;
             try {
                 bytes = new byte[(int) msg.getBodyLength()];
-                msg.readBytes(bytes);                
+                msg.readBytes(bytes);
                 TrackingOutput to = parseReceivedMessage(bytes);
                 if(to != null) {
                     dbCon.insertNewDetection(to);
@@ -90,6 +127,5 @@ public class Consumer {
 
             return null;
         }
-        
-    }    
+    }
 }
