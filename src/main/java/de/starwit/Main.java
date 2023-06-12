@@ -51,7 +51,7 @@ public class Main {
     public void run() {
         while(this.isReady()) {
             try {
-                Thread.sleep(1);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 this.getLog().warn("Message consuming Thread got interrupted " + e.getMessage());
             }

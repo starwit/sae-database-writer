@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Properties;
 
@@ -46,7 +47,7 @@ public class DataBaseConnection {
 
     public void insertNewDetection(TrackingOutput to) {
 
-        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        Timestamp insertionTimestamp = new Timestamp(System.currentTimeMillis());
         String table = config.getProperty("db.hypertable");
 
         String query = "INSERT INTO \"" + table + "\" ";
@@ -60,13 +61,16 @@ public class DataBaseConnection {
             log.warn("creation of prepared statement didn't work " + e.getMessage());
             return;
         }
-
+        
+        Timestamp captureTimestamp = new Timestamp(to.getFrame().getTimestampUtcMs());
+        
         List<TrackedDetection> list = to.getTrackedDetectionsList();
         for (TrackedDetection td : list) {
             int classId = td.getDetection().getClassId();
             float confidence = td.getDetection().getConfidence();
             byte[] objectID = td.getObjectId().toByteArray();
-            int oId = ByteBuffer.wrap(objectID).getInt();
+            HexFormat hex = HexFormat.of();
+            String oId = hex.formatHex(objectID);
             int minX = td.getDetection().getBoundingBox().getMinX();
             int minY = td.getDetection().getBoundingBox().getMinY();
             int maxX = td.getDetection().getBoundingBox().getMaxX();
@@ -74,10 +78,10 @@ public class DataBaseConnection {
 
             try {
 
-                preStmt.setTimestamp(1, timestamp, null);
+                preStmt.setTimestamp(1, captureTimestamp, null);
                 preStmt.setInt(2, classId);
                 preStmt.setFloat(3, confidence);
-                preStmt.setString(4, ""+oId);
+                preStmt.setString(4, oId);
                 preStmt.setInt(5, minX);
                 preStmt.setInt(6, minY);
                 preStmt.setInt(7, maxX);
@@ -87,12 +91,13 @@ public class DataBaseConnection {
                 log.warn("Adding insert to prepStmt didn't work " + e.getMessage());
             }
             log.info("created batched prep stmt");
-            try {
-                preStmt.executeBatch();
-                log.info("inserted new data");
-            } catch (SQLException e) {
-                log.warn("executing bached prepared stmt didn't work " + e.getMessage());
-            }
+        }
+
+        try {
+            preStmt.executeBatch();
+            log.info("inserted new data");
+        } catch (SQLException e) {
+            log.warn("executing bached prepared stmt didn't work " + e.getMessage());
         }
     }
 
