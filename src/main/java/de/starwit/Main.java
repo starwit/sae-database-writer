@@ -17,7 +17,7 @@ public class Main {
     private Properties config = new Properties();
 
     private DataBaseConnection dbCon;
-    private Consumer queueConsumer;
+    private QueueConsumer queueConsumer;
 
     // true if db and artemis connection is online
     private boolean ready = false;
@@ -28,8 +28,8 @@ public class Main {
         dbCon = new DataBaseConnection(config);
         dbCon.createConnection();
 
-        queueConsumer = new Consumer(config);
-        queueConsumer.configureQueue();
+        queueConsumer = new QueueConsumer(config, dbCon);
+        queueConsumer.start();
         ready = true;
     }
 
@@ -47,6 +47,16 @@ public class Main {
     public boolean isReady() {
         return ready;
     }
+
+    public void run() {
+        while(this.isReady()) {
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                this.getLog().warn("Message consuming Thread got interrupted " + e.getMessage());
+            }
+        }    
+    }
     
     public void stop() {
         log.info("stopping client");
@@ -56,29 +66,13 @@ public class Main {
     }
 
     public static void main( String[] args ) {
-
         Main m =  new Main();
 
-        /*
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                try {
-                    Thread.sleep(200);
-                    m.stop();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    e.printStackTrace();
-                }
-            }
-        });*/
-        
-        while(m.isReady()) {
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                m.getLog().warn("Message consuming Thread got interrupted " + e.getMessage());
-            }
-        }        
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            m.stop();
+        }));
+
+        m.run();
     }
     
 }

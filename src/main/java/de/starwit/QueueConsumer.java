@@ -18,15 +18,15 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
 
-public class Consumer {
+public class QueueConsumer {
 
     private final Logger log = LogManager.getLogger(this.getClass());
     private Properties config;
 
     //private static String url = "tcp://localhost:61616";
-    private String url = "tcp://brain01.starwit.home:30062";
-    private String user = "artemis";
-    private String pw = "artemis";
+    private String url;
+    private String user;
+    private String pw;
 
     private DataBaseConnection dbCon;
 
@@ -35,13 +35,12 @@ public class Consumer {
     private Session session;
     private MessageConsumer consumer;
 
-    private boolean ready = false;
-
-    public Consumer(Properties props) {
-        config = props;
+    public QueueConsumer(Properties props, DataBaseConnection dbCon) {
+        this.config = props;
+        this.dbCon = dbCon;
     }
 
-    public void configureQueue() {
+    public void start() {
 
         url = config.getProperty("broker.url");
         user = config.getProperty("broker.username");
@@ -63,21 +62,14 @@ public class Consumer {
             connection.start();
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             consumer = session.createConsumer(session.createQueue(config.getProperty("broker.queue")));
-            consumer.setMessageListener(new MyListener(dbCon));
-            ready = true;
+            consumer.setMessageListener(new TrackingMessageListener(dbCon));
             log.info("Connected to broker");
         } catch (JMSException e) {
             log.error("couldn't connect to broker " + config.getProperty("broker.url"));
         }
     }
 
-    public boolean isReady() {
-        return ready;
-    }
-
     public void stop() {
-        ready = false;
-
         try {
             consumer.close();
             session.close();
@@ -89,12 +81,12 @@ public class Consumer {
         factory.close();
     }
 
-    private class MyListener implements MessageListener {
+    private class TrackingMessageListener implements MessageListener {
         private final Logger log = LogManager.getLogger(this.getClass());
 
         private DataBaseConnection dbCon;
 
-        public MyListener(DataBaseConnection dbCon) {
+        public TrackingMessageListener(DataBaseConnection dbCon) {
             log.info("set up message listener");
             this.dbCon = dbCon;
         }
