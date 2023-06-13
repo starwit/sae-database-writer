@@ -5,16 +5,12 @@ import org.apache.logging.log4j.Logger;
 
 public class Main {
 
-    private final Logger log = LogManager.getLogger(this.getClass());
-    public Logger getLog() {
-        return log;
-    }
+    private static final Logger log = LogManager.getLogger(Main.class);
 
     private DataBaseConnection dbCon;
     private QueueConsumer queueConsumer;
 
-    // true if db and artemis connection is online
-    private boolean ready = false;
+    private boolean running = false;
 
     public Main() {       
         log.info("Starting Queue Consumer");
@@ -23,28 +19,24 @@ public class Main {
 
         queueConsumer = new QueueConsumer(dbCon);
         queueConsumer.start();
-        ready = true;
-    }
-
-    public boolean isReady() {
-        return ready;
+        running = true;
     }
 
     public void run() {
-        while(this.isReady()) {
+        while(this.running) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
-                this.getLog().warn("Message consuming Thread got interrupted " + e.getMessage());
+                log.warn("Message consuming Thread got interrupted " + e.getMessage());
             }
         }    
     }
     
     public void stop() {
         log.info("stopping client");
-        ready = false;
         queueConsumer.stop();
         dbCon.stop();
+        running = false;
     }
 
     public static void main( String[] args ) {

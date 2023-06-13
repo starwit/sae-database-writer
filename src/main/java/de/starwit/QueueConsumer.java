@@ -62,7 +62,7 @@ public class QueueConsumer {
             consumer.setMessageListener(new TrackingMessageListener(dbCon));
             log.info("Connected to broker");
         } catch (JMSException e) {
-            log.error("couldn't connect to broker " + config.brokerUrl);
+            log.error("couldn't connect to broker " + config.brokerUrl, e);
         }
     }
 
@@ -72,7 +72,7 @@ public class QueueConsumer {
             session.close();
             connection.stop();
         } catch (JMSException e) {
-            log.warn("Closing JMS Connection didn't work " + e.getMessage());
+            log.warn("Closing JMS Connection didn't work", e);
         }
 
         factory.close();
@@ -101,7 +101,7 @@ public class QueueConsumer {
                 }
 
             } catch (JMSException e) {
-                System.out.println("Can't get bytes " + e.getMessage());
+                log.warn("Can't get bytes", e);
             }
         }
 
@@ -111,7 +111,7 @@ public class QueueConsumer {
                 to = TrackingOutput.parseFrom(bytes);
                 return to;
             } catch (InvalidProtocolBufferException e) {
-                System.out.println("can't parse message, returning null");
+                log.warn("can't parse message, returning null", e);
             }
 
             return null;
