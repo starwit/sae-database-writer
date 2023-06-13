@@ -23,8 +23,8 @@ public class DataBaseConnection {
 
     private boolean connected = false;
 
-    public DataBaseConnection(Config config) {
-        this.config = config;
+    public DataBaseConnection() {
+        this.config = Config.getInstance();
     }
     
     public void createConnection() {

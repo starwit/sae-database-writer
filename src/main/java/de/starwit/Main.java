@@ -1,9 +1,5 @@
 package de.starwit;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,8 +10,6 @@ public class Main {
         return log;
     }
 
-    private Properties config = new Properties();
-
     private DataBaseConnection dbCon;
     private QueueConsumer queueConsumer;
 
@@ -24,24 +18,12 @@ public class Main {
 
     public Main() {       
         log.info("Starting Queue Consumer");
-        Config config = Config.getInstance();
-        dbCon = new DataBaseConnection(config);
+        dbCon = new DataBaseConnection();
         dbCon.createConnection();
 
-        queueConsumer = new QueueConsumer(config, dbCon);
+        queueConsumer = new QueueConsumer(dbCon);
         queueConsumer.start();
         ready = true;
-    }
-
-    private void loadProperties() {
-        try {
-            FileInputStream fis = new FileInputStream("client.properties");
-            config.load(fis);
-        } catch (IOException e) {
-            log.error("Can't load config file. Exit. Reason " + e.getMessage());
-            System.exit(1);
-        }
-        // TODO search path for props file
     }
 
     public boolean isReady() {

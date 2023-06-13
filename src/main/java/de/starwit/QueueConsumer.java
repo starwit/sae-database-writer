@@ -32,8 +32,8 @@ public class QueueConsumer {
     private Session session;
     private MessageConsumer consumer;
 
-    public QueueConsumer(Config config, DataBaseConnection dbCon) {
-        this.config = config;
+    public QueueConsumer(DataBaseConnection dbCon) {
+        this.config = Config.getInstance();
         this.dbCon = dbCon;
     }
 
