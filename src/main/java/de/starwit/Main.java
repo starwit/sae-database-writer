@@ -24,7 +24,7 @@ public class Main {
 
     public Main() {       
         log.info("Starting Queue Consumer");
-        loadProperties();
+        Config config = Config.getInstance();
         dbCon = new DataBaseConnection(config);
         dbCon.createConnection();
 

@@ -1,9 +1,5 @@
 package de.starwit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,7 +7,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Properties;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.starwit.visionapi.Messages.TrackedDetection;
 import de.starwit.visionapi.Messages.TrackingOutput;
@@ -19,21 +17,21 @@ import de.starwit.visionapi.Messages.TrackingOutput;
 public class DataBaseConnection {
 
     private final Logger log = LogManager.getLogger(this.getClass());
-    private Properties config;
+    private Config config;
     
     private Connection conn;
 
     private boolean connected = false;
 
-    public DataBaseConnection(Properties props) {
-        config=props;
+    public DataBaseConnection(Config config) {
+        this.config = config;
     }
     
     public void createConnection() {
         try {
-            String url = config.getProperty("db.url") + "/" + config.getProperty("db.schema");
-            String user = config.getProperty("db.username");
-            String pw = config.getProperty("db.password");
+            String url = config.dbUrl + "/" + config.dbSchema;
+            String user = config.dbUsername;
+            String pw = config.dbPassword;
             conn = DriverManager.getConnection(url, user, pw);
             if (conn != null) {
                 connected = true;
@@ -47,8 +45,7 @@ public class DataBaseConnection {
 
     public void insertNewDetection(TrackingOutput to) {
 
-        Timestamp insertionTimestamp = new Timestamp(System.currentTimeMillis());
-        String table = config.getProperty("db.hypertable");
+        String table = config.dbHypertable;
 
         String query = "INSERT INTO \"" + table + "\" ";
         query += "(\"CAPTURE_TS\", \"CLASS_ID\", \"CONFIDENCE\", \"OBJECT_ID\", \"MIN_X\", \"MIN_Y\",\"MAX_X\",\"MAX_Y\") ";

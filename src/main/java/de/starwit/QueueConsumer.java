@@ -1,15 +1,5 @@
 package de.starwit;
 
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import de.starwit.visionapi.Messages.TrackingOutput;
-
-import java.util.Properties;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -18,12 +8,19 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
 
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import de.starwit.visionapi.Messages.TrackingOutput;
+
 public class QueueConsumer {
 
     private final Logger log = LogManager.getLogger(this.getClass());
-    private Properties config;
+    private Config config;
 
-    //private static String url = "tcp://localhost:61616";
     private String url;
     private String user;
     private String pw;
@@ -35,16 +32,16 @@ public class QueueConsumer {
     private Session session;
     private MessageConsumer consumer;
 
-    public QueueConsumer(Properties props, DataBaseConnection dbCon) {
-        this.config = props;
+    public QueueConsumer(Config config, DataBaseConnection dbCon) {
+        this.config = config;
         this.dbCon = dbCon;
     }
 
     public void start() {
 
-        url = config.getProperty("broker.url");
-        user = config.getProperty("broker.username");
-        pw = config.getProperty("broker.pw");
+        url = config.brokerUrl;
+        user = config.brokerUsername;
+        pw = config.brokerPassword;
 
         factory = new ActiveMQConnectionFactory("tcp://" + url, user, pw);
         factory.setRetryInterval(1000);
@@ -55,17 +52,17 @@ public class QueueConsumer {
 
         log.info("set up queue connection to " 
             + "tcp://" + url + " "
-            + config.getProperty("broker.queue"));
+            + config.brokerQueue);
 
         try {
             connection = factory.createConnection();
             connection.start();
             session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            consumer = session.createConsumer(session.createQueue(config.getProperty("broker.queue")));
+            consumer = session.createConsumer(session.createQueue(config.brokerQueue));
             consumer.setMessageListener(new TrackingMessageListener(dbCon));
             log.info("Connected to broker");
         } catch (JMSException e) {
-            log.error("couldn't connect to broker " + config.getProperty("broker.url"));
+            log.error("couldn't connect to broker " + config.brokerUrl);
         }
     }
 
