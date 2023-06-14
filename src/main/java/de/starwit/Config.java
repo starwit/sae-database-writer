@@ -16,6 +16,7 @@ public class Config {
     public final String brokerUsername;
     public final String brokerPassword;
     public final String brokerQueue;
+    public final String brokerClientId;
 
     private Config() {
         Dotenv dotenv = Dotenv.load();
@@ -30,6 +31,7 @@ public class Config {
         brokerUsername = dotenv.get("BROKER_USERNAME");
         brokerPassword = dotenv.get("BROKER_PASSWORD");
         brokerQueue = dotenv.get("BROKER_QUEUE");
+        brokerClientId = dotenv.get("BROKER_CLIENT_ID");
     }
         
     public static Config getInstance() {

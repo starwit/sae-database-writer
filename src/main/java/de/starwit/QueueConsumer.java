@@ -48,7 +48,7 @@ public class QueueConsumer {
         factory.setRetryIntervalMultiplier(1.0);
         factory.setReconnectAttempts(-1);
         factory.setConfirmationWindowSize(10);
-        factory.setClientID("vision-api-consumer-01");
+        factory.setClientID(config.brokerClientId);
 
         log.info("set up queue connection to " 
             + "tcp://" + url + " "

@@ -26,8 +26,8 @@ public class DataBaseConnection {
         this.config = Config.getInstance();
 
         this.insertQuery = new StringBuilder("INSERT INTO \"" + config.dbHypertable + "\" ")
-            .append("(\"CAPTURE_TS\", \"CLASS_ID\", \"CONFIDENCE\", \"OBJECT_ID\", \"MIN_X\", \"MIN_Y\",\"MAX_X\",\"MAX_Y\") ")
-            .append("VALUES (?,?,?,?,?,?,?,?)")
+            .append("(\"CAPTURE_TS\", \"CLASS_ID\", \"CONFIDENCE\", \"OBJECT_ID\", \"MIN_X\", \"MIN_Y\",\"MAX_X\",\"MAX_Y\", \"CAMERA_ID\") ")
+            .append("VALUES (?,?,?,?,?,?,?,?,?)")
             .toString();
     }
     
@@ -67,6 +67,7 @@ public class DataBaseConnection {
                 preStmt.setInt(6, minY);
                 preStmt.setInt(7, maxX);
                 preStmt.setInt(8, maxY);
+                preStmt.setString(9, to.getFrame().getSourceId());
                 preStmt.addBatch();
             }
 
