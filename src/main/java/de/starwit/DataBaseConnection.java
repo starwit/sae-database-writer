@@ -16,13 +16,15 @@ import de.starwit.visionapi.Messages.TrackingOutput;
 
 public class DataBaseConnection {
 
+    private static DataBaseConnection instance;
+
     private final Logger log = LogManager.getLogger(this.getClass());
     private final Config config;
     private final String insertQuery;
 
     private Connection conn;
 
-    public DataBaseConnection() {
+    private DataBaseConnection() {
         this.config = Config.getInstance();
 
         this.insertQuery = new StringBuilder("INSERT INTO \"" + config.dbHypertable + "\" ")
@@ -33,7 +35,7 @@ public class DataBaseConnection {
     
     public void createConnection() {
         try {
-            String url = config.dbUrl + "/" + config.dbSchema;
+            String url = config.dbJdbcUrl;
             String user = config.dbUsername;
             String pw = config.dbPassword;
             conn = DriverManager.getConnection(url, user, pw);
@@ -42,7 +44,7 @@ public class DataBaseConnection {
         } 
     }
 
-    public void insertNewDetection(TrackingOutput to) {
+    public synchronized void insertNewDetection(TrackingOutput to) {
         try {
             PreparedStatement preStmt = conn.prepareStatement(this.insertQuery);
 
@@ -87,5 +89,12 @@ public class DataBaseConnection {
         } catch (SQLException e) {
             log.warn("Couldn't close database connection", e);
         }
+    }
+
+    public static DataBaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DataBaseConnection();
+        }
+        return instance;
     }
 }
