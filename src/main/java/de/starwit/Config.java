@@ -27,6 +27,7 @@ public class Config {
     public final String redisHost;
     public final Integer redisPort;
     public final List<String> redisStreamIds;
+    public final String redisInputStreamPrefix;
 
     private Config() {
         Dotenv dotenv = Dotenv
@@ -52,6 +53,7 @@ public class Config {
         redisHost = dotenv.get("REDIS_HOST");
         redisPort = Integer.parseInt(dotenv.get("REDIS_PORT"));
         redisStreamIds = Arrays.asList(dotenv.get("REDIS_STREAM_IDS").split(","));
+        redisInputStreamPrefix = dotenv.get("REDIS_INPUT_STREAM_PREFIX", "objecttracker");
     }
         
     public static Config getInstance() {

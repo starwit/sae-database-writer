@@ -1,6 +1,7 @@
 package de.starwit;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,9 +35,10 @@ public class RedisConsumer implements Runnable {
     
     public RedisConsumer(DataBaseConnection dbConnection) {
         this.dbConnection = dbConnection;
-        this.xReadParams = new XReadParams().count(5).block(600000);
+        this.xReadParams = new XReadParams().count(5).block(2000);
         this.jedis = new JedisPooled(config.redisHost, config.redisPort);
-        this.streamOffsetById = config.redisStreamIds.stream().collect(Collectors.toMap(id -> id, id -> StreamEntryID.LAST_ENTRY));
+        this.streamOffsetById = config.redisStreamIds.stream()
+            .collect(Collectors.toMap(id -> String.format("%s:%s", config.redisInputStreamPrefix, id), id -> StreamEntryID.LAST_ENTRY));
     }
 
     @Override
@@ -52,9 +54,9 @@ public class RedisConsumer implements Runnable {
                 for (StreamEntry message : messages) {
                     // Set last retrieved id
                     this.streamOffsetById.put(streamId, message.getID());
-                    String protoString = message.getFields().get("proto_data");
+                    String proto_b64 = message.getFields().get("proto_data_b64");
                     try {
-                        TrackingOutput proto = TrackingOutput.parseFrom(protoString.getBytes(StandardCharsets.UTF_8));
+                        TrackingOutput proto = TrackingOutput.parseFrom(Base64.getDecoder().decode(proto_b64));
                         dbConnection.insertNewDetection(proto);
                     } catch (InvalidProtocolBufferException e) {
                         log.warn("Error decoding proto from message. streamId={}", streamId, e);

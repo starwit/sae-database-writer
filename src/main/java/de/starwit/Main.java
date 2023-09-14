@@ -1,7 +1,5 @@
 package de.starwit;
 
-import javax.xml.crypto.Data;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
