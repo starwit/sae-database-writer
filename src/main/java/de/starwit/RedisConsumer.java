@@ -48,6 +48,10 @@ public class RedisConsumer implements Runnable {
         while (this.running) {
             List<Entry<String,List<StreamEntry>>> result = jedis.xread(this.xReadParams, this.streamOffsetById);
 
+            if (result == null) {
+                continue;
+            }
+
             for (Entry<String,List<StreamEntry>> resultEntry : result) {
                 String streamId = resultEntry.getKey();
                 List<StreamEntry> messages = resultEntry.getValue();

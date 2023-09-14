@@ -41,10 +41,20 @@ public class DataBaseConnection {
             conn = DriverManager.getConnection(url, user, pw);
         } catch (SQLException e) {
             log.error("Couldn't connect to database with error", e);
+            try {
+                this.conn.close();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+            this.conn = null;
         } 
     }
 
     public synchronized void insertNewDetection(TrackingOutput to) {
+        if (this.conn == null) {
+            this.createConnection();
+        }
+
         try {
             PreparedStatement preStmt = conn.prepareStatement(this.insertQuery);
 
@@ -80,6 +90,12 @@ public class DataBaseConnection {
             log.info("inserted new data");
         } catch (SQLException e) {
             log.warn("error executing insert query", e);
+            try {
+                this.conn.close();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+            this.conn = null;
         }
     }
     
