@@ -33,26 +33,22 @@ public class DataBaseConnection {
             .toString();
     }
     
-    public void createConnection() {
+    public void connect() {
         try {
             String url = config.dbJdbcUrl;
             String user = config.dbUsername;
             String pw = config.dbPassword;
             conn = DriverManager.getConnection(url, user, pw);
+            log.info("Successfully connected to Postgres DB at {}", url);
         } catch (SQLException e) {
             log.error("Couldn't connect to database with error", e);
-            try {
-                this.conn.close();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
-            }
-            this.conn = null;
+            this.close();
         } 
     }
 
     public synchronized void insertNewDetection(TrackingOutput to) {
         if (this.conn == null) {
-            this.createConnection();
+            this.connect();
         }
 
         try {
@@ -83,17 +79,23 @@ public class DataBaseConnection {
                 preStmt.addBatch();
             }
 
-            log.info("created batched prep stmt");
+            log.debug("created batched prep stmt");
 
             preStmt.executeBatch();
 
-            log.info("inserted new data");
+            log.debug("inserted new data");
         } catch (SQLException e) {
-            log.warn("error executing insert query", e);
+            log.error("error executing insert query", e);
+            this.close();
+        }
+    }
+    
+    private void close() {
+        if (this.conn != null) {
             try {
                 this.conn.close();
-            } catch (SQLException e1) {
-                e1.printStackTrace();
+            } catch (SQLException ex) {
+                log.warn("Error closing Postgres connection", ex);
             }
             this.conn = null;
         }

@@ -1,6 +1,7 @@
 package de.starwit;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +37,9 @@ public class RedisConsumer implements Runnable {
     public RedisConsumer(DataBaseConnection dbConnection) {
         this.dbConnection = dbConnection;
         this.xReadParams = new XReadParams().count(5).block(2000);
-        this.jedis = new JedisPooled(config.redisHost, config.redisPort);
         this.streamOffsetById = config.redisStreamIds.stream()
             .collect(Collectors.toMap(id -> String.format("%s:%s", config.redisInputStreamPrefix, id), id -> StreamEntryID.LAST_ENTRY));
+        this.jedis = null;
     }
 
     @Override
@@ -46,7 +47,19 @@ public class RedisConsumer implements Runnable {
         this.running = true;
 
         while (this.running) {
-            List<Entry<String,List<StreamEntry>>> result = jedis.xread(this.xReadParams, this.streamOffsetById);
+            if (!this.isConnectionAlive()) {
+                this.connect();
+            }
+
+            List<Entry<String,List<StreamEntry>>> result = null;
+
+            try {
+                result = jedis.xread(this.xReadParams, this.streamOffsetById);
+            } catch (RuntimeException ex) {
+                log.error("Redis stream read (XREAD) failed", ex);
+                this.close();
+                this.sleep(Duration.ofSeconds(1));
+            }
 
             if (result == null) {
                 continue;
@@ -68,13 +81,55 @@ public class RedisConsumer implements Runnable {
                 }
             }
 
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            this.sleep(Duration.ofMillis(100));
+        }
 
+        this.close();
+    }
+
+    private boolean isConnectionAlive() {
+        if (this.jedis == null) {
+            return false;
+        }
+
+        try {
+            String pingResult = this.jedis.ping();
+            if (pingResult.equalsIgnoreCase("pong")) {
+                return true;
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Redis connection check (ping) failed", ex);
+        }
+
+        return false;
+    }
+
+    private void connect() {
+        this.close();
+        try {
+            this.jedis = new JedisPooled(config.redisHost, config.redisPort);
+        } catch (RuntimeException ex) {
+            log.error("Could not connect to Redis instance", ex);
+            this.close();
+        }
+    }
+
+    private void close() {
+        if (this.jedis != null) {
+            try {
+                this.jedis.close();
+            } catch (RuntimeException ex) {
+                log.warn("Error closing Redis connection", ex);
+            }
+            this.jedis = null;
+        }
+    }
+
+    private void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException ex) {
+            log.warn("Thread was interrupted while sleeping", ex);
         }
     }
 

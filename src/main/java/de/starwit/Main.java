@@ -25,7 +25,7 @@ public class Main {
         if (config.dbOutputEnabled) {
             log.info("Setting up database connection to {}", config.dbJdbcUrl);
             dbCon = DataBaseConnection.getInstance();
-            dbCon.createConnection();
+            dbCon.connect();
         }
 
         if (config.brokerInputEnabled) {

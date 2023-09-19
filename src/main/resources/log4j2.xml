@@ -14,10 +14,10 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="de.vision-api-consumer" level="debug" additivity="false">
+        <Logger name="de.vision-api-consumer" level="${env:LOG_LEVEL:-info}" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
         </Logger>
-        <Root level="debug">
+        <Root level="${env:LOG_LEVEL:-info}">
             <AppenderRef ref="ConsoleAppender"/>
         </Root>
     </Loggers>
