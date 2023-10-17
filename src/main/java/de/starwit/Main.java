@@ -63,7 +63,7 @@ public class Main {
             redisConsumer.stop();
         }
         if (dbCon != null) {
-            dbCon.stop();
+            dbCon.close();
         }
 
         running = false;

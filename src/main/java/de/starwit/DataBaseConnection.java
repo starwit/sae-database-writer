@@ -15,45 +15,56 @@ import de.starwit.visionapi.Messages.TrackedDetection;
 import de.starwit.visionapi.Messages.TrackingOutput;
 
 public class DataBaseConnection {
+    private final Logger log = LogManager.getLogger(this.getClass());
+    private final Config config;
 
     private static DataBaseConnection instance;
 
-    private final Logger log = LogManager.getLogger(this.getClass());
-    private final Config config;
-    private final String insertQuery;
+    private final String INSERT_QUERY; 
+    private PreparedStatement insertStatement;
 
     private Connection conn;
 
     private DataBaseConnection() {
         this.config = Config.getInstance();
-
-        this.insertQuery = new StringBuilder("INSERT INTO \"" + config.dbHypertable + "\" ")
-            .append("(\"CAPTURE_TS\", \"CLASS_ID\", \"CONFIDENCE\", \"OBJECT_ID\", \"MIN_X\", \"MIN_Y\",\"MAX_X\",\"MAX_Y\", \"CAMERA_ID\") ")
-            .append("VALUES (?,?,?,?,?,?,?,?,?)")
-            .toString();
+        this.INSERT_QUERY = """
+            INSERT INTO \s""" + config.dbHypertable + """
+             \s("CAPTURE_TS", "CLASS_ID", "CONFIDENCE", "OBJECT_ID", "MIN_X", "MIN_Y", "MAX_X", "MAX_Y", "CAMERA_ID")
+            VALUES (?,?,?,?,?,?,?,?,?)
+            """;
     }
-    
-    public void connect() {
-        try {
-            String url = config.dbJdbcUrl;
-            String user = config.dbUsername;
-            String pw = config.dbPassword;
-            conn = DriverManager.getConnection(url, user, pw);
-            log.info("Successfully connected to Postgres DB at {}", url);
-        } catch (SQLException e) {
-            log.error("Couldn't connect to database with error", e);
-            this.close();
-        } 
+
+    public boolean connect() {
+        if (this.conn == null) {
+            try {
+                String url = config.dbJdbcUrl;
+                String user = config.dbUsername;
+                String pw = config.dbPassword;
+                conn = DriverManager.getConnection(url, user, pw);
+                this.insertStatement = conn.prepareStatement(this.INSERT_QUERY);
+                log.info("Successfully connected to Postgres DB at {}", url);
+                return true;
+            } catch (SQLException e) {
+                log.error("Couldn't connect to database with error", e);
+                this.close();
+                return false;
+            } 
+        } else {
+            return true;
+        }
     }
 
     public synchronized void insertNewDetection(TrackingOutput to) {
-        if (this.conn == null) {
-            this.connect();
+        if (!this.connect()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.warn("Thread was interrupted while waiting after database connection failure", e);
+            }
+            return;
         }
 
         try {
-            PreparedStatement preStmt = conn.prepareStatement(this.insertQuery);
-
             Timestamp captureTimestamp = new Timestamp(to.getFrame().getTimestampUtcMs());
             
             List<TrackedDetection> list = to.getTrackedDetectionsList();
@@ -67,21 +78,21 @@ public class DataBaseConnection {
                 int maxX = td.getDetection().getBoundingBox().getMaxX();
                 int maxY = td.getDetection().getBoundingBox().getMaxY();
     
-                preStmt.setTimestamp(1, captureTimestamp, null);
-                preStmt.setInt(2, classId);
-                preStmt.setFloat(3, confidence);
-                preStmt.setString(4, oId);
-                preStmt.setInt(5, minX);
-                preStmt.setInt(6, minY);
-                preStmt.setInt(7, maxX);
-                preStmt.setInt(8, maxY);
-                preStmt.setString(9, to.getFrame().getSourceId());
-                preStmt.addBatch();
+                insertStatement.setTimestamp(1, captureTimestamp, null);
+                insertStatement.setInt(2, classId);
+                insertStatement.setFloat(3, confidence);
+                insertStatement.setString(4, oId);
+                insertStatement.setInt(5, minX);
+                insertStatement.setInt(6, minY);
+                insertStatement.setInt(7, maxX);
+                insertStatement.setInt(8, maxY);
+                insertStatement.setString(9, to.getFrame().getSourceId());
+                insertStatement.addBatch();
             }
 
             log.debug("created batched prep stmt");
 
-            preStmt.executeBatch();
+            insertStatement.executeBatch();
 
             log.debug("inserted new data");
         } catch (SQLException e) {
@@ -90,7 +101,7 @@ public class DataBaseConnection {
         }
     }
     
-    private void close() {
+    public void close() {
         if (this.conn != null) {
             try {
                 this.conn.close();
@@ -98,14 +109,6 @@ public class DataBaseConnection {
                 log.warn("Error closing Postgres connection", ex);
             }
             this.conn = null;
-        }
-    }
-    
-    public void stop() {
-        try {
-            conn.close();
-        } catch (SQLException e) {
-            log.warn("Couldn't close database connection", e);
         }
     }
 

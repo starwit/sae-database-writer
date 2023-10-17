@@ -1,6 +1,5 @@
 package de.starwit;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -47,8 +46,13 @@ public class RedisConsumer implements Runnable {
         this.running = true;
 
         while (this.running) {
-            if (!this.isConnectionAlive()) {
-                this.connect();
+            if (!this.connect()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    log.warn("Thread was interrupted while waiting after redis connection failure", e);
+                }
+                continue;
             }
 
             List<Entry<String,List<StreamEntry>>> result = null;
@@ -87,30 +91,19 @@ public class RedisConsumer implements Runnable {
         this.close();
     }
 
-    private boolean isConnectionAlive() {
+    private boolean connect() {
         if (this.jedis == null) {
-            return false;
-        }
-
-        try {
-            String pingResult = this.jedis.ping();
-            if (pingResult.equalsIgnoreCase("pong")) {
+            try {
+                this.jedis = new JedisPooled(config.redisHost, config.redisPort);
+                log.info("Successfully connected to Redis instance at {}:{}", config.redisHost, config.redisPort);
                 return true;
+            } catch (RuntimeException ex) {
+                log.error("Could not connect to Redis instance", ex);
+                this.close();
+                return false;
             }
-        } catch (RuntimeException ex) {
-            log.warn("Redis connection check (ping) failed", ex);
-        }
-
-        return false;
-    }
-
-    private void connect() {
-        this.close();
-        try {
-            this.jedis = new JedisPooled(config.redisHost, config.redisPort);
-        } catch (RuntimeException ex) {
-            log.error("Could not connect to Redis instance", ex);
-            this.close();
+        } else {
+            return true;
         }
     }
 
