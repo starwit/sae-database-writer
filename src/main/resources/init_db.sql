@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.detection
     "max_x" integer,
     "max_y" integer
 );
-SELECT create_hypertable('detection', 'capture_ts');
+SELECT create_hypertable('detection', 'capture_ts', if_not_exists => TRUE);
 
 CREATE INDEX IF NOT EXISTS detection_camera_id
     ON public.detection USING btree
