@@ -103,13 +103,20 @@ public class DataBaseConnection {
     }
 
     public void close() {
-        if (this.conn != null) {
-            try {
-                this.conn.close();
-            } catch (SQLException ex) {
-                log.warn("Error closing Postgres connection", ex);
+        try {
+            if (insertStatement != null) {
+                insertStatement.close();
             }
+            if (this.conn != null) {
+
+                this.conn.close();
+
+            }
+        } catch (SQLException ex) {
+            log.warn("Error closing Postgres connection", ex);
+        } finally {
             this.conn = null;
+            this.insertStatement = null;
         }
     }
 
