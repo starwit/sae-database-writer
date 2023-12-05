@@ -20,7 +20,7 @@ public class DataBaseConnection {
 
     private static DataBaseConnection instance;
 
-    private final String INSERT_QUERY; 
+    private final String INSERT_QUERY;
     private PreparedStatement insertStatement;
 
     private Connection conn;
@@ -28,10 +28,11 @@ public class DataBaseConnection {
     private DataBaseConnection() {
         this.config = Config.getInstance();
         this.INSERT_QUERY = """
-            INSERT INTO \s""" + config.dbHypertable + """
-             \s("CAPTURE_TS", "CLASS_ID", "CONFIDENCE", "OBJECT_ID", "MIN_X", "MIN_Y", "MAX_X", "MAX_Y", "CAMERA_ID")
-            VALUES (?,?,?,?,?,?,?,?,?)
-            """;
+                INSERT INTO \s""" + config.dbHypertable
+                + """
+                         \s("capture_ts", "class_id", "confidence", "object_id", "min_x", "min_y", "max_x", "max_y", "camera_id")
+                        VALUES (?,?,?,?,?,?,?,?,?)
+                        """;
     }
 
     public boolean connect() {
@@ -48,7 +49,7 @@ public class DataBaseConnection {
                 log.error("Couldn't connect to database with error", e);
                 this.close();
                 return false;
-            } 
+            }
         } else {
             return true;
         }
@@ -66,7 +67,7 @@ public class DataBaseConnection {
 
         try {
             Timestamp captureTimestamp = new Timestamp(to.getFrame().getTimestampUtcMs());
-            
+
             List<TrackedDetection> list = to.getTrackedDetectionsList();
             for (TrackedDetection td : list) {
                 int classId = td.getDetection().getClassId();
@@ -77,7 +78,7 @@ public class DataBaseConnection {
                 int minY = td.getDetection().getBoundingBox().getMinY();
                 int maxX = td.getDetection().getBoundingBox().getMaxX();
                 int maxY = td.getDetection().getBoundingBox().getMaxY();
-    
+
                 insertStatement.setTimestamp(1, captureTimestamp, null);
                 insertStatement.setInt(2, classId);
                 insertStatement.setFloat(3, confidence);
@@ -100,15 +101,22 @@ public class DataBaseConnection {
             this.close();
         }
     }
-    
+
     public void close() {
-        if (this.conn != null) {
-            try {
-                this.conn.close();
-            } catch (SQLException ex) {
-                log.warn("Error closing Postgres connection", ex);
+        try {
+            if (insertStatement != null) {
+                insertStatement.close();
             }
+            if (this.conn != null) {
+
+                this.conn.close();
+
+            }
+        } catch (SQLException ex) {
+            log.warn("Error closing Postgres connection", ex);
+        } finally {
             this.conn = null;
+            this.insertStatement = null;
         }
     }
 
