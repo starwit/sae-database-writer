@@ -5,7 +5,7 @@
   <groupId>de.starwit</groupId>
   <artifactId>vision-api-consumer</artifactId>
   <packaging>jar</packaging>
-  <version>0.4.2</version>
+  <version>0.5.0</version>
   <name>vision-api-consumer</name>
   <url>http://maven.apache.org</url>
 
