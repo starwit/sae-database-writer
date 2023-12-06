@@ -18,7 +18,7 @@ jobs:
               with:
                 servers: |
                   [{
-                      "id": "github",
+                      "id": "github2",
                       "username": "${{ vars.PRIVATE_REPO_USERNAME }}",
                       "password": "${{ secrets.MAVEN_REPO_READ }}"
                   }]
