@@ -42,4 +42,3 @@ jobs:
                 context: .
                 push: true
                 tags: ${{ vars.INTERNAL_REGISTRY_URL }}/sae/vision-api-jms-client:${{ env.VERSION }}
-                labels: "latest"
