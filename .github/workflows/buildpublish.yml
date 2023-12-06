@@ -14,14 +14,18 @@ jobs:
         steps:
 
             - name: setup internal maven registry
-              uses: s4u/maven-settings-action@v2.3.0
+              uses: s4u/maven-settings-action@v2.8.0
               with:
                 servers: |
                   [{
-                      "id": "de.starwit.vision-api",
+                      "id": "github",
                       "username": "${{ vars.PRIVATE_REPO_USERNAME }}",
                       "password": "${{ secrets.MAVEN_REPO_READ }}"
-                  }]             
+                  }]
+            - name: debug
+              run: find .
+            - name: debug2
+              run: cat settings.xml
             - uses: actions/checkout@v4
             - name: Set up JDK 21
               uses: actions/setup-java@v4
