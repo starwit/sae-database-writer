@@ -2,6 +2,7 @@ name: Build and Publish
 
 on:
   workflow_dispatch:
+
   pull_request:
     branches: [ master, versionupgrade ]   
 
@@ -23,8 +24,7 @@ jobs:
                 maven-version: 3.9.6
             - name: get version from pom.xml
               run: |
-                VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
-                echo "::set-output name=version::$VERSION" >> $GITHUB_ENV
+                echo "VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )" >> $GITHUB_ENV
               id: get_version
             - name: check version number
               run: echo "version number ${{ env.VERSION }}"
