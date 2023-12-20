@@ -5,4 +5,4 @@ VERSION=$(docker run -it --rm -v $(pwd)/pom.xml:/pom.xml -w / maven:3.6-openjdk-
 
 mvn clean package
 
-docker build -t docker.internal.starwit-infra.de/sae/vision-api-jms-client:$VERSION .
+docker build -t starwitorg/sae-database-writer:$VERSION .
