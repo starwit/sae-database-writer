@@ -1,6 +1,8 @@
 # Database writer for Vision API
 This repo implements a JMS and Redis client, that can receive and parse Vision API messages and then writes into a Postgres database.
 
+This component is part of the Starwit Awareness Engine (SAE). See umbrella repo here: https://github.com/starwit/vision-pipeline-k8s
+
 ## Development
 - Add vision-api package repository to your Maven config, as described [here](https://github.com/starwit/vision-api#java--maven)
 
