@@ -37,7 +37,7 @@ public class RedisConsumer implements Runnable {
         this.dbConnection = dbConnection;
         this.xReadParams = new XReadParams().count(5).block(2000);
         this.streamOffsetById = config.redisStreamIds.stream()
-            .collect(Collectors.toMap(id -> String.format("%s:%s", config.redisInputStreamPrefix, id), id -> StreamEntryID.LAST_ENTRY));
+            .collect(Collectors.toMap(id -> String.format("%s:%s", config.redisInputStreamPrefix, id), id -> new StreamEntryID(0)));
         this.jedis = null;
     }
 
