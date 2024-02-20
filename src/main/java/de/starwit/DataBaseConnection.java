@@ -74,19 +74,19 @@ public class DataBaseConnection {
                 float confidence = td.getDetection().getConfidence();
                 byte[] objectID = td.getObjectId().toByteArray();
                 String oId = HexFormat.of().formatHex(objectID);
-                int minX = td.getDetection().getBoundingBox().getMinX();
-                int minY = td.getDetection().getBoundingBox().getMinY();
-                int maxX = td.getDetection().getBoundingBox().getMaxX();
-                int maxY = td.getDetection().getBoundingBox().getMaxY();
+                float minX = td.getDetection().getBoundingBox().getMinX();
+                float minY = td.getDetection().getBoundingBox().getMinY();
+                float maxX = td.getDetection().getBoundingBox().getMaxX();
+                float maxY = td.getDetection().getBoundingBox().getMaxY();
 
                 insertStatement.setTimestamp(1, captureTimestamp, null);
                 insertStatement.setInt(2, classId);
                 insertStatement.setFloat(3, confidence);
                 insertStatement.setString(4, oId);
-                insertStatement.setInt(5, minX);
-                insertStatement.setInt(6, minY);
-                insertStatement.setInt(7, maxX);
-                insertStatement.setInt(8, maxY);
+                insertStatement.setFloat(5, minX);
+                insertStatement.setFloat(6, minY);
+                insertStatement.setFloat(7, maxX);
+                insertStatement.setFloat(8, maxY);
                 insertStatement.setString(9, to.getFrame().getSourceId());
                 insertStatement.addBatch();
             }
