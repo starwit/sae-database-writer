@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -30,9 +31,9 @@ public class DataBaseConnection {
         this.INSERT_QUERY = """
                 INSERT INTO \s""" + config.dbHypertable
                 + """
-                         \s("capture_ts", "class_id", "confidence", "object_id", "min_x", "min_y", "max_x", "max_y", "camera_id")
-                        VALUES (?,?,?,?,?,?,?,?,?)
-                        """;
+                    \s("capture_ts", "class_id", "confidence", "object_id", "min_x", "min_y", "max_x", "max_y", "camera_id", "latitude", "longitude")
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """;
     }
 
     public boolean connect() {
@@ -88,6 +89,15 @@ public class DataBaseConnection {
                 insertStatement.setFloat(7, maxX);
                 insertStatement.setFloat(8, maxY);
                 insertStatement.setString(9, to.getFrame().getSourceId());
+
+                if (td.getDetection().getGeoCoordinate() != null) {
+                    insertStatement.setDouble(10, td.getDetection().getGeoCoordinate().getLatitude());
+                    insertStatement.setDouble(11, td.getDetection().getGeoCoordinate().getLongitude());
+                } else {
+                    insertStatement.setNull(10, Types.DOUBLE);
+                    insertStatement.setNull(11, Types.DOUBLE);
+                }
+                
                 insertStatement.addBatch();
             }
 
