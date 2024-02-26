@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import de.starwit.visionapi.Messages.TrackingOutput;
+import de.starwit.visionapi.Messages.SaeMessage;
 
 public class QueueConsumer {
 
@@ -95,9 +95,9 @@ public class QueueConsumer {
             try {
                 bytes = new byte[(int) msg.getBodyLength()];
                 msg.readBytes(bytes);
-                TrackingOutput to = parseReceivedMessage(bytes);
-                if(to != null) {
-                    dbCon.insertNewDetection(to);
+                SaeMessage saeMsg = parseReceivedMessage(bytes);
+                if(saeMsg != null) {
+                    dbCon.insertNewDetection(saeMsg);
                 }
 
             } catch (JMSException e) {
@@ -105,11 +105,11 @@ public class QueueConsumer {
             }
         }
 
-        private TrackingOutput parseReceivedMessage(byte[] bytes) {
-            TrackingOutput to;
+        private SaeMessage parseReceivedMessage(byte[] bytes) {
+            SaeMessage msg;
             try {
-                to = TrackingOutput.parseFrom(bytes);
-                return to;
+                msg = SaeMessage.parseFrom(bytes);
+                return msg;
             } catch (InvalidProtocolBufferException e) {
                 log.warn("can't parse message, returning null", e);
             }

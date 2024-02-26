@@ -12,7 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import de.starwit.visionapi.Messages.TrackingOutput;
+import de.starwit.visionapi.Messages.SaeMessage;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.StreamEntryID;
 import redis.clients.jedis.params.XReadParams;
@@ -77,8 +77,8 @@ public class RedisConsumer implements Runnable {
                     this.streamOffsetById.put(streamId, message.getID());
                     String proto_b64 = message.getFields().get("proto_data_b64");
                     try {
-                        TrackingOutput proto = TrackingOutput.parseFrom(Base64.getDecoder().decode(proto_b64));
-                        dbConnection.insertNewDetection(proto);
+                        SaeMessage msg = SaeMessage.parseFrom(Base64.getDecoder().decode(proto_b64));
+                        dbConnection.insertNewDetection(msg);
                     } catch (InvalidProtocolBufferException e) {
                         log.warn("Error decoding proto from message. streamId={}", streamId, e);
                     }

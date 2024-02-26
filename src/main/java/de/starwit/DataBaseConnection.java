@@ -12,8 +12,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import de.starwit.visionapi.Messages.TrackedDetection;
-import de.starwit.visionapi.Messages.TrackingOutput;
+import de.starwit.visionapi.Messages.Detection;
+import de.starwit.visionapi.Messages.SaeMessage;
 
 public class DataBaseConnection {
     private final Logger log = LogManager.getLogger(this.getClass());
@@ -56,7 +56,7 @@ public class DataBaseConnection {
         }
     }
 
-    public synchronized void insertNewDetection(TrackingOutput to) {
+    public synchronized void insertNewDetection(SaeMessage msg) {
         if (!this.connect()) {
             try {
                 Thread.sleep(1000);
@@ -67,18 +67,18 @@ public class DataBaseConnection {
         }
 
         try {
-            Timestamp captureTimestamp = new Timestamp(to.getFrame().getTimestampUtcMs());
+            Timestamp captureTimestamp = new Timestamp(msg.getFrame().getTimestampUtcMs());
 
-            List<TrackedDetection> list = to.getTrackedDetectionsList();
-            for (TrackedDetection td : list) {
-                int classId = td.getDetection().getClassId();
-                float confidence = td.getDetection().getConfidence();
-                byte[] objectID = td.getObjectId().toByteArray();
+            List<Detection> list = msg.getDetectionsList();
+            for (Detection det : list) {
+                int classId = det.getClassId();
+                float confidence = det.getConfidence();
+                byte[] objectID = det.getObjectId().toByteArray();
                 String oId = HexFormat.of().formatHex(objectID);
-                float minX = td.getDetection().getBoundingBox().getMinX();
-                float minY = td.getDetection().getBoundingBox().getMinY();
-                float maxX = td.getDetection().getBoundingBox().getMaxX();
-                float maxY = td.getDetection().getBoundingBox().getMaxY();
+                float minX = det.getBoundingBox().getMinX();
+                float minY = det.getBoundingBox().getMinY();
+                float maxX = det.getBoundingBox().getMaxX();
+                float maxY = det.getBoundingBox().getMaxY();
 
                 insertStatement.setTimestamp(1, captureTimestamp, null);
                 insertStatement.setInt(2, classId);
@@ -88,11 +88,11 @@ public class DataBaseConnection {
                 insertStatement.setFloat(6, minY);
                 insertStatement.setFloat(7, maxX);
                 insertStatement.setFloat(8, maxY);
-                insertStatement.setString(9, to.getFrame().getSourceId());
+                insertStatement.setString(9, msg.getFrame().getSourceId());
 
-                if (td.getDetection().getGeoCoordinate() != null) {
-                    insertStatement.setDouble(10, td.getDetection().getGeoCoordinate().getLatitude());
-                    insertStatement.setDouble(11, td.getDetection().getGeoCoordinate().getLongitude());
+                if (det.hasGeoCoordinate()) {
+                    insertStatement.setDouble(10, det.getGeoCoordinate().getLatitude());
+                    insertStatement.setDouble(11, det.getGeoCoordinate().getLongitude());
                 } else {
                     insertStatement.setNull(10, Types.DOUBLE);
                     insertStatement.setNull(11, Types.DOUBLE);
