@@ -18,14 +18,16 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-import de.starwit.visionapi.Common.TypeMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
 
 @SpringBootApplication
 @EnableAsync
 public class SaeDatabaseWriterApplication {
 
 	@Autowired
-    private StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer;
+	private StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer;
 
 	@Value("${redis.stream.ids}")
 	private List<String> streamIds;
@@ -39,16 +41,26 @@ public class SaeDatabaseWriterApplication {
 		SpringApplication.run(SaeDatabaseWriterApplication.class, args);
 	}
 
-
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) throws SQLException {
-        LOG.info("Application context refreshed");
+	@EventListener
+	public void onApplicationEvent(ContextRefreshedEvent event) throws SQLException {
+		LOG.info("Application context refreshed");
 		for (String streamId : this.streamIds) {
 			StreamOffset<String> streamOffset = StreamOffset.create(streamId, ReadOffset.lastConsumed());
-			streamListenerContainer.receive(streamOffset, new VisionApiListener(t -> {LOG.info(t.toString());}));
+			streamListenerContainer.receive(streamOffset, new VisionApiListener(this::writeMessage));
 			LOG.info("Added subscription for Redis stream \"" + streamId + "\"");
 		}
 		streamListenerContainer.start();
-        // jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS test (id SERIAL PRIMARY KEY, name VARCHAR(255))");
-    }
+	}
+
+	private void writeMessage(Message message) {
+		try {
+			LOG.info(JsonFormat.printer().print(message));
+			String sql = "INSERT INTO messages (frame_timestamp, message_type, proto_json) VALUES (?::timestamptz, ?, ?::jsonb)";
+			jdbcTemplate.update(sql, "2025-09-05T10:10:10", "TEST", JsonFormat.printer().print(message));
+		} catch (InvalidProtocolBufferException e) {
+			// This should not happen
+			e.printStackTrace();
+		}
+	}
+
 }
