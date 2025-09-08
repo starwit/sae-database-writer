@@ -8,21 +8,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.stream.StreamListener;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-
-import de.starwit.visionapi.Analytics.DetectionCountMessage;
-import de.starwit.visionapi.Common.TypeMessage;
-import de.starwit.visionapi.Sae.PositionMessage;
-import de.starwit.visionapi.Sae.SaeMessage;
-
 public class VisionApiListener implements StreamListener<String, MapRecord<String, String, String>> {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private Consumer<Message> messageCallback;
+    private Consumer<VisionApiRecord> messageCallback;
 
-    public VisionApiListener(Consumer<Message> messageCallback) {
+    public VisionApiListener(Consumer<VisionApiRecord> messageCallback) {
         this.messageCallback = messageCallback;
     }
     
@@ -37,25 +29,11 @@ public class VisionApiListener implements StreamListener<String, MapRecord<Strin
 
             byte[] msgBytes = Base64.getDecoder().decode(b64Proto);
 
-            TypeMessage typeMsg = TypeMessage.parseFrom(msgBytes);
-            log.info("Received message of type: " + typeMsg.getType().name());
-            
-            Message parsedMessage;
-            parsedMessage = switch (typeMsg.getType()) {
-                case SAE -> SaeMessage.parseFrom(msgBytes);
-                case POSITION -> PositionMessage.parseFrom(msgBytes);
-                case DETECTION_COUNT -> DetectionCountMessage.parseFrom(msgBytes);
-                default -> null;
-            };
-            
-            if (parsedMessage == null) {
-                log.warn("Unhandled message type: " + typeMsg.getType());
-                return;
-            }
+            VisionApiRecord record = VisionApiParser.parse(msgBytes, message.getStream());
 
-            this.messageCallback.accept(parsedMessage);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Received invalid proto", e);
+            this.messageCallback.accept(record);
+        } catch (VisionApiException e) {
+            log.warn("Received invalid message", e);
             return;
         }
     }

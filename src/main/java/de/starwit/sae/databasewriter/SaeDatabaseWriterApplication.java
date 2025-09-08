@@ -18,10 +18,6 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
-import com.google.protobuf.util.JsonFormat;
-
 @SpringBootApplication
 @EnableAsync
 public class SaeDatabaseWriterApplication {
@@ -29,7 +25,7 @@ public class SaeDatabaseWriterApplication {
 	@Autowired
 	private StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer;
 
-	@Value("${redis.stream.ids}")
+	@Value("#{'${redis.stream.keys}'.split(',')}")
 	private List<String> streamIds;
 
 	private static final Logger LOG = LoggerFactory.getLogger(SaeDatabaseWriterApplication.class);
@@ -52,15 +48,10 @@ public class SaeDatabaseWriterApplication {
 		streamListenerContainer.start();
 	}
 
-	private void writeMessage(Message message) {
-		try {
-			LOG.info(JsonFormat.printer().print(message));
-			String sql = "INSERT INTO messages (frame_timestamp, message_type, proto_json) VALUES (?::timestamptz, ?, ?::jsonb)";
-			jdbcTemplate.update(sql, "2025-09-05T10:10:10", "TEST", JsonFormat.printer().print(message));
-		} catch (InvalidProtocolBufferException e) {
-			// This should not happen
-			e.printStackTrace();
-		}
+	private void writeMessage(VisionApiRecord record) {
+		LOG.debug("Received message of type " + record.messageType() + " on stream " + record.streamKey() + ": " + record.protoJson());
+		String sql = "INSERT INTO messages (message_timestamp, stream_key, message_type, proto_json) VALUES (?::timestamptz, ?, ?, ?::jsonb)";
+		jdbcTemplate.update(sql, record.timestamp().toString(), record.streamKey(), record.messageType().name(), record.protoJson());
 	}
 
 }

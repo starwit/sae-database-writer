@@ -19,10 +19,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>      
-    <java-version>21</java-version>
-    <vision-api.version>3.4.0</vision-api.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <vision-api.version>3.5.3</vision-api.version>
   </properties>  
 
   <dependencies>
@@ -65,12 +63,6 @@
       <groupId>de.starwit</groupId>
       <artifactId>vision-api</artifactId>
       <version>${vision-api.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java-util</artifactId>
-      <version>4.31.1</version>
     </dependency>
 
     <dependency>
