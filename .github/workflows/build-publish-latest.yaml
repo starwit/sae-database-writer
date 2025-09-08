@@ -1,30 +1,20 @@
-name: Create release
+name: Build prerelease image
 
 on:
   workflow_dispatch:
-    inputs:
-      versionChoice:
-        type: choice
-        required: true
-        description: Version Change
-        options:
-        - patch
-        - minor
-        - major
+  push:
 
 permissions:
-  contents: write
   packages: read
 
 env:
-  VERSION_CHOICE: ${{ github.event.inputs.versionChoice }}
   IMAGE_NAME: sae-database-writer
   DOCKERHUB_USERNAME: starwit
   DOCKERHUB_ORG: starwitorg  
 
 jobs:
   build:
-    name: "Creating maven and github release"
+    name: "Build and publish docker image"
     runs-on: [self-hosted, linux, X64]
     
     steps:
@@ -39,33 +29,11 @@ jobs:
       with:
          maven-version: 3.9.2      
 
-    - name: setup node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22 
-
     - name: checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: '0'
+        fetch-depth: 0
 
-    - name: Bump Version and Commit
-      run: |
-        CURRENT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
-        RELEASE_VERSION=$(npx semver $CURRENT_VERSION -i ${{ env.VERSION_CHOICE }})
-        mvn versions:set -DnewVersion=$RELEASE_VERSION -DgenerateBackupPoms=false
-        echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
-
-        git commit -a -m "Bump version to $RELEASE_VERSION"
-        git tag $RELEASE_VERSION
-        git push
-        git push --tags
-
-    - name: Create github release
-      run: gh release create ${{ env.RELEASE_VERSION }} --generate-notes 
-      env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
     - name: Build with Maven
       run: mvn clean package -B --settings .github/workflows/settings.xml --file pom.xml
       env:
@@ -93,4 +61,4 @@ jobs:
         push: true
         sbom: true
         provenance: mode=max
-        tags: ${{ env.DOCKERHUB_ORG }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        tags: ${{ env.DOCKERHUB_ORG }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}-${{ github.run_number }}
