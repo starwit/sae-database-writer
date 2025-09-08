@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jre
 
-COPY target/vision-api-consumer.jar /app/vision-api-consumer.jar
+COPY target/sae-database-writer.jar /app/sae-database-writer.jar
 
 WORKDIR /app
 
-CMD [ "java", "-jar", "vision-api-consumer.jar" ]
+CMD [ "java", "-jar", "sae-database-writer.jar" ]
