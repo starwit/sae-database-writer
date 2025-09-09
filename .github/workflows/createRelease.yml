@@ -44,6 +44,11 @@ jobs:
       with:
         node-version: 22 
 
+    - name: Install GH CLI
+      uses: dev-hanz-ops/install-gh-cli-action@v0.2.1
+      with:
+        gh-cli-version: 2.78.0
+
     - name: checkout
       uses: actions/checkout@v4
       with:

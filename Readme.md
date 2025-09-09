@@ -14,4 +14,4 @@ This component is part of the Starwit Awareness Engine (SAE). See umbrella repo 
 See `application.properties` for available configuration values.
 
 ## Debugging
-The log level of the entire application can be set through the environment variable `LOG_LEVEL`, default is `info`.
+The log level of the relevant parts can be set through the Spring Boot property `LOGGING_LEVEL_DE_STARWIT`, default is `info`.
