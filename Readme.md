@@ -21,7 +21,7 @@ poetry run python play.py --fixed-interval 1s --adjust-timestamps <dumpfile_name
 LOGGING_LEVEL_DE_STARWIT=debug mvn spring-boot:run
 
 # Look at database entries arriving
-watch "docker compose exec db psql -U postgres database_writer -P pager=off -c 'SELECT * FROM messages order by id desc limit 1 into csv;'"
+watch "docker compose exec db psql -U postgres database_writer -P pager=off -c 'SELECT * FROM messages order by id desc limit 1'"
 ```
 
 ## Configuration
