@@ -30,6 +30,7 @@ public class VisionApiListener implements StreamListener<String, MapRecord<Strin
             byte[] msgBytes = Base64.getDecoder().decode(b64Proto);
 
             VisionApiRecord record = VisionApiParser.parse(msgBytes, message.getStream());
+            log.debug("Received message of type " + record.messageType() + " on stream " + record.streamKey() + ": " + record.protoJson());
 
             this.messageCallback.accept(record);
         } catch (VisionApiException e) {

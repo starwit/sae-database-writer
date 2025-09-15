@@ -9,6 +9,20 @@ This component is part of the Starwit Awareness Engine (SAE). See umbrella repo 
 - Add vision-api package repository to your Maven config, as described [here](https://github.com/starwit/vision-api#java--maven)
 - `deployment` contains a docker compose file that can be used to start the necessary database and valkey instances
 - Use sae-tools / a running SAE instance to write interesting messages onto the configured streams
+```sh
+# Start database and Valkey instance (in deployments)
+docker compose up
+
+# Start saedump playback (in starwit-awareness-engine/tools/sae-introspection)
+# You can use the short exemplary dumpfile src/test/resources/test_positionsource.saedump
+poetry run python play.py --fixed-interval 1s --adjust-timestamps <dumpfile_name>
+
+# Run database-writer (and log messages)
+LOGGING_LEVEL_DE_STARWIT=debug mvn spring-boot:run
+
+# Look at database entries arriving
+watch "docker compose exec db psql -U postgres database_writer -P pager=off -c 'SELECT * FROM messages order by id desc limit 1 into csv;'"
+```
 
 ## Configuration
 See `application.properties` for available configuration values.

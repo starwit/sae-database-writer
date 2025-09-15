@@ -15,23 +15,20 @@ import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-@EnableAsync
 public class SaeDatabaseWriterApplication {
 
-	@Autowired
-	private StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer;
+	private static final Logger LOG = LoggerFactory.getLogger(SaeDatabaseWriterApplication.class);
 
 	@Value("#{'${redis.stream.keys}'.split(',')}")
 	private List<String> streamIds;
 
-	private static final Logger LOG = LoggerFactory.getLogger(SaeDatabaseWriterApplication.class);
+	@Autowired
+	private StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer;
 
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
+	private VisionApiDao visionApiDao;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SaeDatabaseWriterApplication.class, args);
@@ -42,16 +39,10 @@ public class SaeDatabaseWriterApplication {
 		LOG.info("Application context refreshed");
 		for (String streamId : this.streamIds) {
 			StreamOffset<String> streamOffset = StreamOffset.create(streamId, ReadOffset.lastConsumed());
-			streamListenerContainer.receive(streamOffset, new VisionApiListener(this::writeMessage));
+			streamListenerContainer.receive(streamOffset, new VisionApiListener(visionApiDao::insert));
 			LOG.info("Added subscription for Redis stream \"" + streamId + "\"");
 		}
 		streamListenerContainer.start();
-	}
-
-	private void writeMessage(VisionApiRecord record) {
-		LOG.debug("Received message of type " + record.messageType() + " on stream " + record.streamKey() + ": " + record.protoJson());
-		String sql = "INSERT INTO messages (message_timestamp, stream_key, message_type, proto_json) VALUES (?::timestamptz, ?, ?, ?::jsonb)";
-		jdbcTemplate.update(sql, record.timestamp().toString(), record.streamKey(), record.messageType().name(), record.protoJson());
 	}
 
 }
