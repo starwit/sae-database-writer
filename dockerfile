@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 COPY target/sae-database-writer*.jar /app/sae-database-writer.jar
 
